@@ -1,0 +1,39 @@
+name: tf-plan
+on:
+  push:
+
+permissions: write-all
+
+jobs:
+  plan:
+    name: Terraform plan
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./testqueue1
+    steps:
+      - name: Checkout
+        uses: action/checkout@v4
+        with:
+          ref: ${{ github.event.ref }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: MySessionName
+          role-skip-session-tagging: true
+      - name: terraform init
+        id: tf-init
+        shell: bash
+        run: terraform init
+      - name: terraform workspace
+        id: tf-workspace
+        shell: bash
+        run: terraform workspace select -or-create dev
+      - name: terraform plan
+        id: tf-plan
+        shell: bash
+        run: terraform plan -var-file="dev.tfvars" -out dev-plan.tfplan
